@@ -1,0 +1,29 @@
+version: '3'
+  
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      - PGPORT=7171
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=bosaholding@2020
+    ports:
+      - "7171:5432"
+  web:
+    container_name: itwork
+    restart: always
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      - VIRTUAL_HOST=work1.bosa.mn
+    volumes:
+      - .:/code
+    ports:
+      - "8171:8000"
+
+networks:
+  default:
+    external:
+      name: proxynetwork
