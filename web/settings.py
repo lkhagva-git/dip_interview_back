@@ -3,7 +3,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'f-%+stvq$^x%fjrmonpvy+rl$@=d8yh*g(n-07f4c#$7$0l-jp'
 DEBUG = True
-ALLOWED_HOSTS = ['202.131.245.182', 'work1.bosa.mn']
+ALLOWED_HOSTS = ['*']
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -11,9 +11,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'corsheaders',
     'main',
 ]
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -21,6 +24,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
 ]
 ROOT_URLCONF = 'web.urls'
 TEMPLATES = [
@@ -47,9 +53,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'postgres',
         'USER': 'postgres',
-        'PASSWORD': 'bosaholding@2020',
+        'PASSWORD': 'postgres@2024dip',
         'HOST': 'db',
-        'PORT': '7171',
+        'PORT': '7001',
     }
 }
 AUTH_PASSWORD_VALIDATORS = [
@@ -66,6 +72,15 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+}
 LANGUAGE_CODE = 'mn-MN'
 TIME_ZONE = 'Asia/Ulaanbaatar'
 USE_I18N = True
@@ -80,10 +95,3 @@ STATIC_URL = '/static/'
 LOGIN_URL = '/login/'
 LOGOUT_REDIRECT_URL = '/'
 LOGIN_REDIRECT_URL = '/'
-
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'bizmail3.itools.mn'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'admin@bosa-impex.mn'
-EMAIL_HOST_PASSWORD = 'Amez4JXM'
-EMAIL_USE_TLS = True

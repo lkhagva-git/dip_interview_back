@@ -5,23 +5,21 @@ services:
     image: postgres
     restart: always
     environment:
-      - PGPORT=7171
+      - PGPORT=7001
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=bosaholding@2020
+      - POSTGRES_PASSWORD=postgres@2024dip
     ports:
-      - "7171:5432"
+      - "7001:5432"
   web:
-    container_name: itwork
+    container_name: dip_back
     restart: always
     build: .
     command: python manage.py runserver 0.0.0.0:8000
-    environment:
-      - VIRTUAL_HOST=work1.bosa.mn
     volumes:
       - .:/code
     ports:
-      - "8171:8000"
+      - "8001:8000"
 
 networks:
   default:
