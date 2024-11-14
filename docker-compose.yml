@@ -1,5 +1,5 @@
-version: '3'
-  
+version: '3.8'
+
 services:
   db:
     image: postgres
@@ -11,6 +11,9 @@ services:
       - POSTGRES_PASSWORD=postgres@2024dip
     ports:
       - "7001:5432"
+    networks:
+      - proxynetwork
+
   web:
     container_name: dip_back
     restart: always
@@ -20,8 +23,25 @@ services:
       - .:/code
     ports:
       - "8001:8000"
+    networks:
+      - proxynetwork
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com     
+      - PGADMIN_DEFAULT_PASSWORD=admin              
+    ports:
+      - "5050:80"             
+    networks:
+      - proxynetwork
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin               
 
 networks:
-  default:
-    external:
-      name: proxynetwork
+  proxynetwork:
+    external: true
+
+volumes:
+  pgadmin_data:
