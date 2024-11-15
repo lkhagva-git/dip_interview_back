@@ -19,9 +19,8 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from rest_framework import status
 
-@login_required
-def index(request):
-    return render(request, 'index.html')
+from .models import *
+from .serializers import *
 
 
 @api_view(['GET'])
@@ -36,14 +35,11 @@ def login_view(request):
     Authenticate user and return token if credentials are valid.
     """
 
-    print("request --------------------------------------->")
-    print(request)
     username = request.data.get('username')
     password = request.data.get('password')
     user = authenticate(username=username, password=password)
 
     if user is not None:
-        # Generate or retrieve token for authenticated user
         token, created = Token.objects.get_or_create(user=user)
         return Response({'token': token.key}, status=status.HTTP_200_OK)
     else:
@@ -78,3 +74,18 @@ def test_access(request):
     Example endpoint to test access with only authentication.
     """
     return Response({"message": "Authenticated access granted"}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def profile_data(request):
+    """
+    Retrieve the authenticated user's profile data.
+    """
+    user = request.user
+    try:
+        profile = Profile.objects.get(user=user) 
+        serializer = ProfileSerializer(profile)
+        return Response(serializer.data)
+    except Profile.DoesNotExist:
+        return Response({"error": "Profile not found"}, status=404)
