@@ -86,6 +86,8 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
+
+
 LANGUAGE_CODE = 'mn-MN'
 TIME_ZONE = 'Asia/Ulaanbaatar'
 USE_I18N = True
@@ -100,3 +102,15 @@ STATIC_URL = '/static/'
 LOGIN_URL = '/login/'
 LOGOUT_REDIRECT_URL = '/'
 LOGIN_REDIRECT_URL = '/'
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'sandbox.smtp.mailtrap.io' 
+EMAIL_PORT = 587                        
+EMAIL_HOST_USER = '3b8b0c4cf5d52e'
+EMAIL_HOST_PASSWORD = 'b24335bf92c259'  
+EMAIL_USE_TLS = True                     
+EMAIL_USE_SSL = False                    
+DEFAULT_FROM_EMAIL = 'webmaster@localhost'
+
+

@@ -71,17 +71,24 @@ class CandidateDetailSerializer(serializers.ModelSerializer):
     educations = EducationSerializer(many=True, read_only=True)
     languages = LanguageSerializer(many=True, read_only=True)
     skills = SkillSerializer(many=True, read_only=True)
+    image_url = serializers.SerializerMethodField()
+
 
     class Meta:
         model = Anket
         fields = '__all__'
+
+    def get_image_url(self, obj):
+        if obj.image and obj.image.photo:
+            return obj.image.photo.url 
+        return None 
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         # Add any custom processing if necessary.
         return representation
 
-class InterviewSerializer(serializers.ModelSerializer):
+class InterviewGetSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username') 
     department = serializers.CharField(source='user.profile.department') 
     title = serializers.CharField(source='user.profile.title') 
@@ -90,9 +97,14 @@ class InterviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Interview
-        fields = ['username', 'department', 'title', 'first_name', 'last_name', 'level', 'status', 'interviewed_date', 'main_overall']
+        fields = ['id', 'username', 'department', 'title', 'first_name', 'last_name', 'level', 'status', 'interviewed_date', 'main_overall', 'is_completed', 'is_scheduled', 'is_final', 'conclution_points']
 
 class InterviewDetailSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username') 
+    department = serializers.CharField(source='user.profile.department') 
+    title = serializers.CharField(source='user.profile.title') 
+    first_name = serializers.CharField(source='user.profile.first_name') 
+    last_name = serializers.CharField(source='user.profile.last_name') 
     class Meta:
         model = Interview
         fields = '__all__'
@@ -104,4 +116,11 @@ class InterviewPostSerializer(serializers.ModelSerializer):
         model = Interview
         fields = ['status', 'pros', 'cons', 'main_overall', 'conclution_points', 'additional_note', 'communication', 'appearance', 'logic_skill', 'attitude', 'independence', 'responsibility', 'leadership', 'knowledge', 'overall_score']
 
-        
+class ScheduleSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(source='user.profile.first_name') 
+    last_name = serializers.CharField(source='user.profile.last_name')  
+    title = serializers.CharField(source='user.profile.title')  
+
+    class Meta:
+        model = Schedule
+        fields = '__all__'

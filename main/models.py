@@ -25,7 +25,7 @@ class Image(models.Model):
 
 
 class Anket(models.Model):
-    level_count = models.CharField(max_length=500, verbose_name='Хэдэн ярилцлага хийх', null=True, blank=True)
+    # level_count = models.CharField(max_length=500, verbose_name='Хэдэн ярилцлага хийх', null=True, blank=True)
     status = models.IntegerField(choices=ANKET_STATUS_CHOICES, verbose_name='Статус', null=True, blank=True)
 
     created_at = models.DateField(verbose_name='Үүссэн огноо', null=True, blank=True)
@@ -147,21 +147,16 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
 
 
 class Interview(models.Model):
+    is_completed = models.BooleanField(default=False, verbose_name='Ярилцлага хийгдсэн эсэх')
+    is_scheduled = models.BooleanField(default=False, verbose_name='Цаг товлосон эсэх')
+    is_final = models.BooleanField(default=False, verbose_name='Сүүлийн/Шийдвэрлэх ярилцлага эсэх')
+    
     anket = models.ForeignKey(Anket, related_name='interviews', on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     level = models.CharField(max_length=100, verbose_name="Хэд дэх ярилцлага", null=True, blank=True)
     status = models.IntegerField(choices=INTERVIEW_STATUS_CHOICES, verbose_name="Ярилцлагийн статус", null=True, blank=True)
 
-# obeselete
-    last_name = models.CharField(max_length=500, verbose_name='Овог', null=True, blank=True)
-    first_name = models.CharField(max_length=500, verbose_name='Нэр', null=True, blank=True)
-
     interviewed_date = models.DateField(verbose_name='Ярилцлага хийсэн огноо', null=True, blank=True)
-
-# obeselete
-    company = models.CharField(max_length=500, verbose_name='Байгууллага', null=True, blank=True)
-    department = models.CharField(max_length=500, verbose_name='Алба хэлтэс', null=True, blank=True)
-    title = models.CharField(max_length=500, verbose_name='Албан тушаал', null=True, blank=True)
 
     pros = models.CharField(max_length=1000, verbose_name='Анхаарал татсан чадварууд', null=True, blank=True)
     cons = models.CharField(max_length=1000, verbose_name='Ажиглагдсан сул тал', null=True, blank=True)
@@ -169,9 +164,6 @@ class Interview(models.Model):
     main_overall = models.CharField(max_length = 1000, verbose_name ='Ерөнхий дүгнэлт', null=True, blank=True)
     
     conclution_points = models.IntegerField(verbose_name='Нэгдсэн дүгнэлт (оноо)', null=True, blank=True)
-
-# obeselete
-    possible_date = models.DateField(max_length=500, verbose_name ='Ажилд орох боломжтой огноо', null=True, blank=True)
 
     additional_note = models.CharField(max_length = 1000, verbose_name ='Нэмэлт тайлбар/тэмдэглэгээ', null=True, blank=True)
 
@@ -198,6 +190,7 @@ class Desicion(models.Model):
 class Schedule(models.Model):
     anket = models.ForeignKey(Anket, related_name='schedules', on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    interview = models.ForeignKey(Interview, on_delete=models.CASCADE, null=True, blank=True)
     address = models.CharField(max_length=500, verbose_name ='Хаяг', null=True, blank=True)
     date_time = models.DateTimeField(null=True, blank=True)
     created_at = models.DateField(null=True, blank=True)
