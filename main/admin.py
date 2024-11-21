@@ -66,12 +66,6 @@ class InterviewAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'anket__first_name', 'anket__last_name')
     list_filter = ('status', 'interviewed_date')
 
-@admin.register(Desicion)
-class DesicionAdmin(admin.ModelAdmin):
-    list_display = ('interview', 'user', 'desicion_type', 'created_at')
-    search_fields = ('interview__anket__first_name', 'interview__anket__last_name', 'user__username')
-    list_filter = ('desicion_type', 'created_at')
-
 @admin.register(Schedule)
 class ScheduleAdmin(admin.ModelAdmin):
     list_display = ('anket', 'user', 'address', 'date_time', 'created_at')

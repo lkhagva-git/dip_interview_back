@@ -1,3 +1,4 @@
+import logging
 import re
 import datetime
 import json
@@ -30,7 +31,6 @@ def get_items(request):
 
     return Response("Heelloooo world API your is working lkhagva!!!!!!")
 
-
 @csrf_exempt
 @api_view(['POST'])
 def login_view(request):
@@ -48,7 +48,6 @@ def login_view(request):
     else:
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
     
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def test_access(request):
@@ -56,7 +55,6 @@ def test_access(request):
     Example endpoint to test access with only authentication.
     """
     return Response({"message": "Authenticated access granted"}, status=status.HTTP_200_OK)
-
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -73,6 +71,7 @@ def profile_data(request):
         return Response({"error": "Profile not found"}, status=404)
 
 
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def candidates_data(request):
@@ -80,8 +79,7 @@ def candidates_data(request):
     Retrieve the candidates' data.
     """
     try:
-        # statusaar ylgah
-        ankets = Anket.objects.all()
+        ankets = Anket.objects.filter(status=0)
         serializer = AnketSerializer(ankets, many=True)
         return Response(serializer.data)
     except Anket.DoesNotExist:
@@ -117,6 +115,7 @@ def interview_history(request, pk):
     except Anket.DoesNotExist:
         return Response({"error": "Candidate not found"}, status=404)
 
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def interview_detail(request, pk):
@@ -129,6 +128,7 @@ def interview_detail(request, pk):
         return Response(serializer.data)
     except Interview.DoesNotExist:
         return Response({"error": "Interview not found"}, status=404)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -150,47 +150,37 @@ def profile_list(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def createAnket(request):
-    # Deserialize the incoming data
     serializer = AnketSerializer(data=request.data)
     
     if serializer.is_valid():
-        # Save the anket instance
         anket = serializer.save()
 
-        # Handle the related models if present in the request data
         related_data = request.data.get('related', {})
 
-        # Create related Family members
         families = related_data.get('families', [])
         for family_data in families:
             Family.objects.create(anket=anket, **family_data)
 
-        # Create related CareerContact entries
         contacts = related_data.get('contacts', [])
         for contact_data in contacts:
             CareerContact.objects.create(anket=anket, **contact_data)
 
-        # Create related PriorCareer entries
         prior_careers = related_data.get('prior_careers', [])
         for career_data in prior_careers:
             PriorCareer.objects.create(anket=anket, **career_data)
 
-        # Create related Awards
         awards = related_data.get('awards', [])
         for award_data in awards:
             Award.objects.create(anket=anket, **award_data)
 
-        # Create related Education entries
         education_entries = related_data.get('education', [])
         for education_data in education_entries:
             Education.objects.create(anket=anket, **education_data)
 
-        # Create related Languages
         languages = related_data.get('languages', [])
         for language_data in languages:
             Language.objects.create(anket=anket, **language_data)
 
-        # Create related Skills
         skills = related_data.get('skills', [])
         for skill_data in skills:
             Skill.objects.create(anket=anket, **skill_data)
@@ -203,7 +193,10 @@ def createAnket(request):
 @csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def create_interview(request):
+def conduct_interview(request):
+    """
+    After conducted interview, update interview object accordingly.
+    """
     serializer = InterviewPostSerializer(data=request.data)
 
     if serializer.is_valid():
@@ -220,25 +213,44 @@ def create_interview(request):
             inter.save()
 
             if inter.status == 1:
-                rest_interviews = Interview.objects.filter(level__gt=inter.level)
+                rest_interviews = Interview.objects.filter(level__gt=inter.level, anket=inter.anket)
                 for item in rest_interviews:
                     item.is_completed = True
                     item.save()
 
-            # eniig shalgah
-            if inter.is_final == True:
+            if inter.is_final:
                 if inter.status == 2:
-                    inter.anket.status = 1   
+                    inter.anket.status = 1  
                 else:
                     inter.anket.status = 2
-                inter.save()   
+                inter.anket.save() 
 
-            send_interview_email(inter.anket.email, "Ярилцлагын үр дүн", "Үр дүн - " + str(inter.status))
+            send_text_status = INTERVIEW_STATUS_CHOICES[inter.status]
+
+            if inter.status == 0:
+                try:
+                    next_inter = Interview.objects.get(anket=inter.anket, level=inter.level + 1)
+                    profile = Profile.objects.get(user=next_inter.user) 
+                    send_text_1 = f"{inter.interviewed_date}-ний өдрийн ярилцлагын үр дүн {send_text_status[1]} төлөвтэй амжилттай явагдсан тул таньд дараах ажил горилогч санал болгогдлоо. http://localhost:3000/candidate/{inter.anket.id}"
+                    send_interview_email(profile.email, "Ажил горилогч санал болгох", send_text_1)
+                except (Interview.DoesNotExist, Profile.DoesNotExist) as e:
+                    logging.error(f"Next interview or profile not found: {str(e)}")
+                    return Response({'error': 'Next interview or profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            try:
+                send_text_2 = "Эрхэм " + inter.anket.last_name + " " + inter.anket.first_name + " танд энэ өдрийн мэндийг хүргэе. Таны " + str(inter.interviewed_date) + "-ний өдрийн ярилцлагын үр дүн "  + send_text_status[1] + " төлөвтэй амжилттай явагдлаа."
+                send_interview_email(inter.anket.email, "Ярилцлагын үр дүн", send_text_2)
+            except Exception as e:
+                logging.error(f"Failed to send email to candidate: {str(e)}")
+                return Response({'error': 'Failed to send email'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             return Response({'message': 'Interview updated successfully'}, status=status.HTTP_200_OK)
         
         except Interview.DoesNotExist:
             return Response({'error': 'Interview not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logging.error(f"Unexpected error occurred: {str(e)}")
+            return Response({'error': 'An unexpected error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -247,6 +259,9 @@ def create_interview(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_interview_plan(request):
+    """
+    Create interview plan by creating interview objects.
+    """
     try:
         employee_ids = request.data.get('employee_ids')
         anket_id = request.data.get('anket_id')
@@ -275,39 +290,70 @@ def create_interview_plan(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_schedule(request):
+    """
+    Create interview schedule
+    """
     try:
         candidate_id = request.data.get('candidate_id')
-        anket = Anket.objects.get(pk=candidate_id)
+        if not candidate_id:
+            return Response({'error': 'Candidate ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            anket = Anket.objects.get(pk=candidate_id)
+        except Anket.DoesNotExist:
+            return Response({'error': 'Anket not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         inter_id = request.data.get('inter_id')
-        interview = Interview.objects.get(pk=inter_id)
+        if not inter_id:
+            return Response({'error': 'Interview ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            interview = Interview.objects.get(pk=inter_id)
+        except Interview.DoesNotExist:
+            return Response({'error': 'Interview not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         user = request.user
         created_at = timezone.now().date()
 
-        schedule = Schedule.objects.create(
-            anket=anket,
-            user=user,
-            interview=interview,
-            address=request.data.get('address', ''),
-            date_time=request.data.get('date_time'),
-            created_at=created_at
-        )
+        date_time = request.data.get('date_time')
+        if not date_time:
+            return Response({'error': 'Date and time are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        address = request.data.get('address', '')
+
+        try:
+            schedule = Schedule.objects.create(
+                anket=anket,
+                user=user,
+                interview=interview,
+                address=address,
+                date_time=date_time,
+                created_at=created_at
+            )
+        except Exception as e:
+            return Response({'error': f'Failed to create schedule: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
         interview.is_scheduled = True
         interview.save()
 
-        send_interview_email(anket.email, 'Ярилцлагын цаг товлогдлоо', 'Цаг ' + schedule.date_time + 'Байршил ' + schedule.address)
+        try:
+            profile = Profile.objects.get(user=user)
+            send_text = (
+                f"Эрхэм хүндэт {anket.last_name} {anket.first_name} таны ажлын ярилцлага товлогдлоо. "
+                f"Ярилцлага хийгч: {profile.title} албан тушаалтай {profile.last_name} {profile.first_name}, "
+                f"Байршлын хаяг: {schedule.address}, Огноо: {str(schedule.date_time)}"
+            )
+            send_interview_email(anket.email, "Ярилцлагын тов", send_text)
+        except Profile.DoesNotExist:
+            return Response({'error': 'Profile for user not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(ScheduleSerializer(schedule).data, status=status.HTTP_201_CREATED)
 
-    except Anket.DoesNotExist:
-        return Response({'error': 'Anket not found.'}, status=status.HTTP_404_NOT_FOUND)
-    except Interview.DoesNotExist:
-        return Response({'error': 'Interview not found.'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
+        return Response({'error': f'An unexpected error occurred: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -323,6 +369,9 @@ def schedule_list(request):
 
 
 def send_interview_email(recipient_email, subject, message):
+    """
+    Helper function, email sender
+    """
     try:
         send_mail(
             subject,
