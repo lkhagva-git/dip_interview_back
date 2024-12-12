@@ -169,7 +169,7 @@ class Interview(models.Model):
     
     main_overall = models.CharField(max_length = 1000, verbose_name ='Ерөнхий дүгнэлт', null=True, blank=True)
     
-    conclution_points = models.IntegerField(verbose_name='Нэгдсэн дүгнэлт (оноо)', null=True, blank=True)
+    conclution_points = models.CharField(verbose_name='Нэгдсэн дүгнэлт (оноо)', null=True, blank=True)
 
     additional_note = models.CharField(max_length = 1000, verbose_name ='Нэмэлт тайлбар/тэмдэглэгээ', null=True, blank=True)
 
