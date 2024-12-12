@@ -51,7 +51,7 @@ class Anket(models.Model):
     medical = models.CharField(max_length=5000, verbose_name='Та эрүүл мэндийн хувьд анхаарах ямар нэгэн зовиур байгаа эсэх', null=True, blank=True)
     
     def __str__(self):
-        return f"{self.title} ({self.pk})"
+        return f"{self.title}, {self.last_name} - {self.first_name} ({self.pk})"
 
     class Meta:
         verbose_name = "Анкет"
